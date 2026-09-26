@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+- The stale-ref retry only covered "unknown ref" (a wiped id map). A click/type on a ref that is
+  still known but has gone stale for any other "(observe again)" reason — element removed from the
+  page, or changed since observe — was reported as failed immediately with no retry, even when the
+  page was mid-async-re-render and the target would reappear a moment later (e.g. a filter sidebar
+  that hydrates on its own timer, independent of any action just taken). Now retried the same way,
+  up to two free attempts — but WITHOUT forcing a full re-snapshot for these cases, since a snapshot
+  taken while the target is still absent would otherwise wipe its identity fingerprint and prevent a
+  later, successful retry from ever reconnecting the same ref.
+
 ## [0.6.3] - 2026-09-27
 
 ### Changed — fewer, richer rows per observation (fewer round trips)

@@ -450,6 +450,22 @@ test('a ref to a row that no longer exists fails instead of hitting a neighbour'
   assert.equal(await out(), '|Buy milk,Pay rent,Call mom,Fix bike');
 });
 
+test('a click on a ref that is transiently absent (independent async re-render) is retried, not failed', { skip }, async () => {
+  const t = await h.goto('flicker.html');
+  const cbRef = mustRef(t, 'Free cancellation');
+  // Simulate Booking.com-style sidebar re-hydration that happens on its OWN timer, unrelated to any
+  // op we run: the checkbox vanishes now and a fresh (but identically-labeled) one reappears later.
+  await h.js(`(function(){
+    document.getElementById('slot').innerHTML = '';
+    setTimeout(function(){
+      document.getElementById('slot').innerHTML = '<label><input type="checkbox"> Free cancellation</label>';
+    }, 200);
+  })()`);
+  const r = await h.act({ op: 'click', ref: cbRef });
+  assert.doesNotMatch(r, /no longer on page/, r);
+  assert.equal(await h.js(`document.querySelector('#slot input').checked`), true, r);
+});
+
 test('150 invisible ad iframes: ignored cheaply; the one visible cross-site frame is read', { skip }, async () => {
   const t = await h.goto('adframes.html');
   const frames = t.split('\n').filter((l) => l.startsWith('frame '));

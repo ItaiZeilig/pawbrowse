@@ -1339,16 +1339,24 @@ async function resolveHit(tabId, ref, opts, _retries) {
     if(!p.hit) return {error:'element is covered by another element (dismiss the overlay/dialog first)'};
     return {x:p.x, y:p.y};
   })()`);
-  // A ref the page-side cache no longer recognises (its map was rebuilt, this tab's world was
-  // recreated, or the element is mid-re-render from a JUST-PRIOR action — e.g. switching a
-  // code-language combobox remounts the code block, including its own "Expand code" button, a beat
-  // after the click that triggered it) is not necessarily gone: a fresh scan reruns the SAME
-  // "gone element -> matching new element" rebind snapshot() already does for re-renders. Up to two
-  // free retries with a short growing delay, transparent to the caller — costs nothing on success,
-  // and never hides a real "no longer on page" failure.
-  if(result && result.error === 'unknown ref (observe again)' && _retries < 2){
+  // Any "(observe again)"-flavored failure can mean the page is mid-re-render — from a just-prior
+  // action, or from something async and independent of us entirely (a sidebar widget that hydrates
+  // on its own timer) — rather than the target being truly gone. Up to two free retries with a short
+  // growing delay, transparent to the caller: costs nothing on success, and still surfaces a real
+  // failure once retries run out.
+  //
+  // 'unknown ref' means byId[ref] itself is missing — there is no fingerprint left to match against,
+  // so only a fresh full snapshot() (which runs the "gone element -> matching new element" rebind for
+  // EVERY ref) has any chance of reviving it. For every other case (element/row disconnected or
+  // changed), byId[ref]'s fingerprint is still intact, and c.get()'s own live-DOM fallback (above)
+  // already re-scans the page fresh on every call — so we must NOT call snapshot() here: a full
+  // rebuild resets byId/guards/fps for ALL refs from whatever's on the page at that instant, and if it
+  // happens to land while our target is still absent (e.g. mid-hydration), it erases the very
+  // fingerprint a LATER, successful retry would need — permanently orphaning a ref that would
+  // otherwise have recovered on its own.
+  if(result && result.error && /observe again/i.test(result.error) && _retries < 2){
     await sleep(_retries === 0 ? 120 : 300);
-    try { await snapshot(tabId, 1); } catch {}
+    if(result.error === 'unknown ref (observe again)'){ try { await snapshot(tabId, 1); } catch {} }
     return resolveHit(tabId, ref, opts, _retries + 1);
   }
   return result;
