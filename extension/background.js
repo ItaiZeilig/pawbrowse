@@ -865,14 +865,41 @@ const SNAPSHOT = `(function(seed, opts){
     if(dropH.size) actions=actions.filter(function(a){ return !dropH.has(a); });
   }catch(_){}
   // The nearest ancestor text that isn't just the label itself: which row/item a control is in.
+  // avoid, when given, skips past an ancestor whose stripped text matches it — used below when
+  // that text turned out to be shared by another same-label control too (not actually distinguishing).
   cache.ctxOf=function(el, lab){ return ctxOf(el, lab); };
-  function ctxOf(el, lab){
+  function ctxOf(el, lab, avoid){
     for(var p=el&&el.parentElement, g=0; p && g<6 && p.tagName!=='BODY'; p=p.parentElement, g++){
       var tx=clean(p.innerText,400); if(!tx || tx===lab) continue;
-      var rest=clean(tx.split(lab).join(' '),40); if(rest) return rest;
+      var rest=clean(tx.split(lab).join(' '),40); if(rest && rest!==avoid) return rest;
     }
     return '';
   }
+  // Two same-label controls can also share their nearest row text (an identical filter chip mirrored
+  // into two named panels, e.g. Booking's "Free cancellation" appearing under both "Your previous
+  // filters" and "Popular filters"): climb one level further, past that shared text, for the colliding
+  // pair only. others is the LIVE elements of every other control in the same label group, so this
+  // gives the identical answer whether it runs now (observe) or later against a re-scanned DOM
+  // (cache.get's re-render fallback below) — the same collision is always detected the same way.
+  function ctxOfDistinct(el, lab, others){
+    var cx=ctxOf(el, lab);
+    if(!cx) return cx;
+    for(var i=0;i<others.length;i++){ if(others[i]!==el && ctxOf(others[i], lab)===cx) return ctxOf(el, lab, cx) || cx; }
+    return cx;
+  }
+  cache.ctxOfDistinct=ctxOfDistinct;
+  // Every currently-visible, currently-actionable element sharing an identity (role+label): the group
+  // ctxOfDistinct needs to detect a collision live, on demand, from just an element and its guard —
+  // used both by cache.get's re-render fallback and by resolveHit's own row-context re-check below, so
+  // the two always agree on what counts as "still the same row" for a live element.
+  function poolOf(want){
+    var cands=collect(), out=[];
+    for(var i=0;i<cands.length;i++){
+      try{ if(cands[i].el.isConnected && cache.guard(cands[i].el)===want && cache.surface(cands[i].el)) out.push(cands[i].el); }catch(_){}
+    }
+    return out;
+  }
+  cache.ctxLive=function(el, lab, want){ return ctxOfDistinct(el, lab, poolOf(want)); };
   // Identical labels ("Delete" per row, "Edit" per user) are ambiguous to the agent: tag each with
   // the nearest ancestor text that tells them apart (e.g. the list row it lives in).
   try{
@@ -880,7 +907,8 @@ const SNAPSHOT = `(function(seed, opts){
     for(var u=0;u<actions.length;u++){ var key=actions[u].kind+'|'+actions[u].label; (byLabel[key]=byLabel[key]||[]).push(actions[u]); }
     Object.keys(byLabel).forEach(function(key){
       var grp=byLabel[key]; if(grp.length<2) return;
-      grp.forEach(function(a){ var cx=ctxOf(cache.nodes.get(a.node), a.label); if(cx) a.ctx=cx; });
+      var els=grp.map(function(a){ return cache.nodes.get(a.node); });
+      grp.forEach(function(a, ai){ var cx=ctxOfDistinct(els[ai], a.label, els); if(cx) a.ctx=cx; });
     });
   }catch(_){}
   var focus=null;
@@ -929,12 +957,13 @@ const SNAPSHOT = `(function(seed, opts){
     var node=cache.byId[id]; if(node==null) return null;
     var e=cache.nodes.get(node); if(e && e.isConnected) return e;
     var fp=cache.fps && cache.fps[id], want=cache.guards && cache.guards[id]; if(!fp || !want || unnamed(want)) return null;
-    var cands=collect(), hit=null, n=0;
-    for(var k=0;k<cands.length && n<2;k++){
-      var el=cands[k].el;
+    var pool=poolOf(want), hit=null, n=0;
+    for(var k=0;k<pool.length && n<2;k++){
+      var el=pool[k];
       try{
-        if(!el.isConnected || cache.guard(el)!==want || !cache.surface(el)) continue;
-        if(fp.ctx && ctxOf(el, fp.label)!==fp.ctx) continue;
+        // Same collision-aware ctx as at observe time (see ctxOfDistinct above): a shared, non-
+        // distinguishing row text must climb past it here too, or a stored deep ctx never matches.
+        if(fp.ctx && ctxOfDistinct(el, fp.label, pool)!==fp.ctx) continue;
         hit=el; n++;
       }catch(_){}
     }
@@ -1291,7 +1320,7 @@ async function resolveHit(tabId, ref, opts, _retries) {
     if(c.guard && c.guards && c.guards[${R}]!=null && c.guard(e)!==c.guards[${R}]) return {error:'element changed since observe (observe again)'};
     // Same node, same label — but a different ROW? Virtualized lists recycle row elements for other
     // items: "Delete" may now belong to someone else. The row context it was listed with must hold.
-    var fp=c.fps&&c.fps[${R}]; if(fp && fp.ctx && c.ctxOf && c.ctxOf(e, fp.label)!==fp.ctx) return {error:'the row this control belongs to changed since observe (now in "'+c.ctxOf(e, fp.label)+'"); observe again'};
+    var fp=c.fps&&c.fps[${R}]; if(fp && fp.ctx && c.ctxLive){ var liveCtx=c.ctxLive(e, fp.label, c.guards[${R}]); if(liveCtx!==fp.ctx) return {error:'the row this control belongs to changed since observe (now in "'+liveCtx+'"); observe again'}; }
     if(e.matches(':disabled')||e.closest('[aria-disabled="true"],[inert]')) return {error:'element is disabled'};
     if(${forFill} && (e.readOnly||e.getAttribute('aria-readonly')==='true')) return {error:'field is read-only'};
     if(${forFill} && !('value' in e) && !e.isContentEditable) return {error:'not an editable field (observe again)'};

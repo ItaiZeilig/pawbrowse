@@ -466,6 +466,17 @@ test('a click on a ref that is transiently absent (independent async re-render) 
   assert.equal(await h.js(`document.querySelector('#slot input').checked`), true, r);
 });
 
+test('two controls with the identical label are disambiguated by their section heading, not just a shared row count', { skip }, async () => {
+  const t = await h.goto('dup-label.html');
+  const r1 = rowRef(t, 'Free cancellation', 'Your previous filters');
+  const r2 = rowRef(t, 'Free cancellation', 'Popular filters');
+  assert.notEqual(r1, r2, `both identically-labeled rows resolved to the same ref:\n${t}`);
+  await h.js('render()'); // full re-render: both checkboxes are replaced with fresh nodes
+  await h.act({ op: 'click', ref: r1 });
+  assert.equal(await h.js("document.getElementById('cb1').checked"), true, 'clicking the "Your previous filters" row must check cb1');
+  assert.equal(await h.js("document.getElementById('cb2').checked"), false, 'must NOT check the other identically-labeled checkbox');
+});
+
 test('150 invisible ad iframes: ignored cheaply; the one visible cross-site frame is read', { skip }, async () => {
   const t = await h.goto('adframes.html');
   const frames = t.split('\n').filter((l) => l.startsWith('frame '));

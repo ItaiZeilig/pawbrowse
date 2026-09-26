@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+- Two controls sharing the exact same accessible label (e.g. Booking.com's "Free cancellation" filter
+  appearing both under "Your previous filters" and under "Popular filters") could be ambiguous even
+  with row-context disambiguation: both climbed to the same shallow, non-distinguishing ancestor text
+  (a shared count) and never got any further. Now, when that shallow text collides between two
+  same-label controls, it climbs one level further for just that pair (to the enclosing section, e.g.
+  its heading) — computed identically whether at observe time or later when re-verifying a stale ref,
+  so the two never disagree.
+
 ## [0.6.4] - 2026-09-27
 
 ### Fixed

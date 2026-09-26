@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="utf-8"><title>DupLabel</title></head><body>
+<div id="app"></div>
+<script>
+ function render(){
+   document.getElementById('app').innerHTML =
+     '<fieldset><legend>Your previous filters</legend>' +
+       '<div class="row"><label><input type="checkbox" id="cb1"> Free cancellation</label> <span>1584</span></div>' +
+     '</fieldset>' +
+     '<fieldset><legend>Popular filters</legend>' +
+       '<div class="row"><label><input type="checkbox" id="cb2"> Free cancellation</label> <span>1584</span></div>' +
+     '</fieldset>';
+ }
+ render();
+</script>
+</body></html>

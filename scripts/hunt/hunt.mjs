@@ -47,6 +47,11 @@ const DEFAULT_SITES = [
   'https://vercel.com/',
   'https://stripe.com/docs/payments/quickstart',
   'https://www.gov.uk/',
+  // filter-heavy commerce/travel: sidebar checkboxes, duplicate-label chips, dynamic re-renders —
+  // the category the original 25 sites above didn't cover, and where real bugs were actually found
+  'https://www.booking.com/searchresults.html?ss=Paris',
+  'https://www.airbnb.com/s/homes',
+  'https://www.target.com/s?searchTerm=lamp',
 ];
 
 const outDir = path.resolve(process.argv[2] || `hunt-${Date.now()}`);
