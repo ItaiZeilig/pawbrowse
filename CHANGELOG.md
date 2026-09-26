@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-09-27
+
 ### Fixed
 - The stale-ref retry only covered "unknown ref" (a wiped id map). A click/type on a ref that is
   still known but has gone stale for any other "(observe again)" reason — element removed from the
