@@ -74,10 +74,15 @@ export async function launch(opts = {}) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'pawbrowse-e2e-'));
   const proc = spawn(exe, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
     '--no-first-run', '--no-default-browser-check', '--window-size=1200,800', '--site-per-process',
-    ...(process.env.CI ? ['--no-sandbox'] : []), ...(process.env.PAW_CHROME_ARGS ? process.env.PAW_CHROME_ARGS.split(' ') : []), ...(opts.args || []), 'about:blank'],
-  { stdio: 'ignore' });
+    ...(process.env.CI ? ['--no-sandbox', '--disable-dev-shm-usage'] : []), ...(process.env.PAW_CHROME_ARGS ? process.env.PAW_CHROME_ARGS.split(' ') : []), ...(opts.args || []), 'about:blank'],
+  { stdio: ['ignore', 'ignore', 'pipe'] });
+  let stderr = '';
+  proc.stderr.on('data', (d) => { stderr += d; });
   const portFile = path.join(profile, 'DevToolsActivePort');
-  for (let i = 0; i < 100 && !fs.existsSync(portFile); i++) await sleep(100);
+  for (let i = 0; i < 100 && !fs.existsSync(portFile) && proc.exitCode == null; i++) await sleep(100);
+  if (!fs.existsSync(portFile)) {
+    throw new Error(`Chrome never wrote ${portFile} (exit code ${proc.exitCode})\n${stderr.slice(-4000) || '(no stderr)'}`);
+  }
   const [dport, wsPath] = fs.readFileSync(portFile, 'utf8').trim().split('\n');
   const cdp = new Cdp(`ws://127.0.0.1:${dport}${wsPath}`);
   await cdp.open();
