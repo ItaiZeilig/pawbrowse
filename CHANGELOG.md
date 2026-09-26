@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-09-27
+
 ### Fixed
 - Two controls sharing the exact same accessible label (e.g. Booking.com's "Free cancellation" filter
   appearing both under "Your previous filters" and under "Popular filters") could be ambiguous even
