@@ -48,10 +48,11 @@ const DEFAULT_SITES = [
   'https://stripe.com/docs/payments/quickstart',
   'https://www.gov.uk/',
   // filter-heavy commerce/travel: sidebar checkboxes, duplicate-label chips, dynamic re-renders —
-  // the category the original 25 sites above didn't cover, and where real bugs were actually found
+  // the category the original 25 sites above didn't cover, and where real bugs were actually found.
+  // (airbnb.com and target.com were tried here too but dropped: GitHub Actions' runner IP gets
+  // bot-challenged on both — target.com served a literal "Human Challenge requires verification"
+  // page instead of the real one — so they'd never test anything real from CI, just add noise.)
   'https://www.booking.com/searchresults.html?ss=Paris',
-  'https://www.airbnb.com/s/homes',
-  'https://www.target.com/s?searchTerm=lamp',
 ];
 
 const outDir = path.resolve(process.argv[2] || `hunt-${Date.now()}`);
