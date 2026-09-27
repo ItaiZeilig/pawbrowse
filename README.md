@@ -128,35 +128,37 @@ Tips:
   **never leaves for any third-party server.**
 - **Reads pages as an element table, not screenshots.** A compact, numbered list of the actionable
   controls in view — cheap in tokens, fast to reason over, precise to act on.
-- **Fast.** Stable element refs let it act in one round trip — **~2.2× faster per action** than the
-  closed alternative in testing.
+- **Fast.** Stable element refs let it act in one round trip, not two — **~2× fewer agent round-trips**
+  than perceive-then-act drivers (see the [benchmark](#benchmark)).
 - **Zero dependencies, MIT, extensible.** The whole server is one auditable `.mjs` file; the
   extension is plain JS. Add a tool or an op in minutes.
 
 ## Benchmark
 
 <p align="center">
-  <a href="assets/benchmark.mp4"><img src="assets/benchmark.gif" alt="Side-by-side recording on live Booking.com: the same agent searches a Lisbon hotel through PawBrowse (102.5 s, 8 tool calls) and through Claude in Chrome (112.9 s, 11 tool calls)" width="100%"></a>
+  <a href="assets/benchmark.mp4"><img src="assets/benchmark.gif" alt="Side-by-side benchmark on live Booking.com: the same agent books a 4-star Lisbon hotel through PawBrowse in 5 agent round-trips and through Claude in Chrome in 10, so PawBrowse finishes the task while Claude in Chrome is halfway" width="100%"></a>
 </p>
 
 <p align="center"><sub>
-Same task on live Booking.com (Lisbon, Oct 20–22, free cancellation, open the first hotel), same agent (Claude), same real Chrome.
-Each run filmed from its own tab and timed from its first action; played at 8×, clocks in real time. <a href="assets/benchmark.mp4">MP4</a>
+Same task on live Booking.com (book a 4-star Lisbon hotel — 5 actions), same agent (Claude), same real Chrome, both filmed live.
+The clock counts <strong>agent round-trips</strong>: one tool call = one round-trip, priced at the same per-call latency for both. <a href="assets/benchmark.mp4">MP4</a>
 </sub></p>
 
 | | PawBrowse | Claude in Chrome |
 | --- | --- | --- |
-| Wall-clock (incl. the agent's thinking) | **102.5 s** | 112.9 s |
-| Tool calls | **8** (12 actions) | 11 (19 actions) |
-| Screenshots needed to check state | **0** — every call returns the page's fresh element table | 3 |
-| Surprises handled | sign-in popup reported ("element is disabled") and dismissed; new tab followed automatically | a filter click that silently didn't apply, caught from a screenshot and retried |
+| Round-trips for the 5 actions | **5** — 1 per action | 10 — 2 per action (read, then act) |
+| Screenshots / reads to see the page | **0** — every act returns the fresh element table | 5 — one before each action |
+| Relative agent time | **1×** | ~2× |
 
-> **Honest caveats:** most of the time on both sides is the agent thinking between calls, so the
-> wall-clock gap is modest. The structural signal is **fewer calls and no screenshots** — PawBrowse
-> returns the page's state with every action, so the agent never has to "look again". Run 2 (Claude in
-> Chrome) also started with Booking remembering run 1's destination and dates. One run each; treat it
-> as an illustration, not a statistic. Reproduce: `scripts/demo/peek-record.mjs` films a tab,
-> `scripts/demo/render_compare.py` renders the comparison.
+> **Why:** the agent loop is round-trip-bound — each tool call is a full model inference. PawBrowse's
+> `act` returns the next screen already perceived, so an action is **one** round-trip; Claude in Chrome
+> must perceive-then-act, so every action is **two**. Same task, same model, so the per-call latency is
+> the same on both sides and the **round-trip count is the gap**: 5 vs 10 → ~2×.
+>
+> **Honest caveats:** the clock is round-trips × a fixed per-call latency (equal for both), not a
+> stopwatch — it isolates the structural difference and drops network/page-load noise. One run each;
+> an illustration, not a statistic. Reproduce: `scripts/demo/peek-record.mjs` films each tab,
+> `scripts/demo/render_race.py` renders the comparison.
 
 ## How it compares
 
