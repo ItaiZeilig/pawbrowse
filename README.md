@@ -167,9 +167,11 @@ You won't call these directly — your agent does — but here's the whole surfa
 | `browser_act` | `{ ops: [...], tabId? }` → runs ops in order, returns a fresh table + a "page changed?" signal. |
 | `browser_assert` | `{ contains? \| url_includes? \| ref_visible?, tabId? }` → prove an outcome (pass/fail). |
 
-**Ops for `browser_act`:** `{op:"click",ref:"e12"}` · `{op:"click_text",text:"..."}` (for custom
-widgets/menus not in the table) · `{op:"type",ref:"e7",text:"..."}` · `{op:"select",ref:"e8",value:"..."}`
-· `{op:"key",key:"Enter"}` · `{op:"scroll",dy:600}` · `{op:"wait",ms:500}`.
+**Ops for `browser_act`:** `{op:"click",ref:"e12"}` · `{op:"click_text",text:"..."}` (custom
+widgets/menus not in the table) · `{op:"click_xy",x,y}` (canvas / custom-drawn UI) ·
+`{op:"type",ref:"e7",text:"..."}` · `{op:"select",ref:"e8",value:"..."}` · `{op:"hover",ref:"e5"}` ·
+`{op:"drag",ref:"e5",to:"e9"}` · `{op:"upload",ref:"e3",paths:["/abs/file.pdf"]}` ·
+`{op:"key",key:"Enter"}` · `{op:"scroll",dy:600}` · `{op:"wait",ms:500}`.
 
 ## Built to be trustworthy
 
@@ -197,8 +199,8 @@ Full details: **[SECURITY.md](SECURITY.md)** · **[PRIVACY.md](PRIVACY.md)**. Fo
 - Attaching shows Chrome's *"PawBrowse is debugging this browser"* banner — expected.
 - One debugger client per tab: a tab with DevTools open (or driven by another extension) can't be attached — switch tabs or close DevTools.
 - `chrome://`, the Chrome Web Store, and other browser pages can't be driven (Chrome blocks automation there).
-- **One active client at a time** — the bridge is a single localhost port, so drive from one client at a time (Claude Code *or* Claude Desktop). A second client says the port's in use rather than failing hard; set a different `PAWBROWSE_PORT` if you need both.
-- **Enumerates shadow DOM + same-origin iframes.** Controls inside open shadow roots and same-origin iframes are in the table and clickable. **Not yet:** cross-origin iframes (the browser blocks them), canvas, and file uploads.
+- **Multiple clients run at once** — a shared broker owns the port and gives each session (Claude Code, Cursor, Claude Desktop…) its own 🐾 tab group, so several agents can drive the browser simultaneously. The only catch is the per-tab rule above: two sessions can't drive the *same* tab.
+- **Reads open shadow DOM + same-origin iframes** — their controls are in the table and clickable. It can also *act* inside cross-origin iframes (via a child debugger session) and do **file uploads** (`upload` op, once you enable *Allow access to file URLs* for the extension). What it **can't read** is cross-origin iframe *text* (payment fields stay opaque) and canvas — use the screenshot + `click_xy` there.
 
 ## Troubleshooting
 
