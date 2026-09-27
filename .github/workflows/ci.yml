@@ -14,6 +14,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      # A known-good Chrome for the headless e2e (the runner's system Chrome
+      # often never writes DevToolsActivePort under --headless=new).
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
       - name: Syntax check
         run: |
           node --check mcp/server.mjs
@@ -24,4 +30,6 @@ jobs:
       - name: Perception e2e (real headless Chrome)
         run: npm run test:e2e
         env:
-          CHROME_PATH: /usr/bin/google-chrome
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+          DBUS_SESSION_BUS_ADDRESS: /dev/null   # silence dbus + let Chrome init in the minimal runner
+          PAW_CHROME_ARGS: "--disable-gpu --no-first-run --no-zygote"
