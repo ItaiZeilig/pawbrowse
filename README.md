@@ -6,14 +6,13 @@
   <img src="extension/icons/icon-48.png" width="28" align="top" alt=""> PawBrowse
 </h1>
 
-<p align="center"><strong>Let Claude Code drive your real, logged-in Chrome — open source, no keys, no second model.</strong></p>
+<p align="center"><strong>Let your AI coding agent drive the real Chrome you already use — logged in, no keys, no second AI.</strong></p>
 
 <p align="center">
 <a href="https://www.npmjs.com/package/pawbrowse"><img src="https://img.shields.io/npm/v/pawbrowse?color=cb3837&logo=npm" alt="npm"></a>
 <a href="https://chromewebstore.google.com/detail/ppfdoledneneiaflggcfogecfnhkmloe"><img src="https://img.shields.io/badge/Chrome-Web%20Store-4285F4?logo=googlechrome&logoColor=white" alt="Chrome Web Store"></a>
+<a href="https://github.com/ItaiZeilig/pawbrowse/actions/workflows/ci.yml"><img src="https://github.com/ItaiZeilig/pawbrowse/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT"></a>
-<a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
-<a href="package.json"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg" alt="Node >=18"></a>
 <img src="https://img.shields.io/badge/deps-zero-brightgreen.svg" alt="zero dependencies">
 <a href="https://claude.com/claude-code"><img src="https://img.shields.io/badge/for-Claude%20Code-8A63D2.svg" alt="for Claude Code"></a>
 <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-server-blue.svg" alt="MCP"></a>
@@ -24,48 +23,31 @@
 </p>
 
 <p align="center"><sub>
-A real run on live Google Flights at <b>1× speed</b> — every frame is the original screencast, the result is verified from the page itself.
-The plan is scripted, so this is PawBrowse's browser time only; your agent's thinking time comes on top.
-<a href="assets/demo.mp4">MP4</a> · reproduce with <code>node scripts/demo/record.mjs rec && python3 scripts/demo/render.py rec</code>
+A real run on live Google Flights at <b>1× speed</b> — every frame is the original screencast, and the result is checked from the page itself. <a href="assets/demo.mp4">MP4</a>
 </sub></p>
 
-PawBrowse is a **Chrome MV3 extension + a tiny zero-dependency MCP server** that lets your local
-AI coding agent (like **Claude Code**) read and act on your **actual, logged-in browser tabs** —
-your profile, your sessions, your open pages — with **no remote-debug port, no browser relaunch,
-and no separate AI model or API key.**
+**PawBrowse gives your coding agent hands and eyes in the browser you're already signed into.**
+It's a small **Chrome extension + a one-file MCP server** (zero dependencies). Your agent — Claude Code,
+Cursor, VS Code, Claude Desktop, anything that speaks MCP — can **see and click your actual tabs**: your
+profile, your logins, your open pages. No remote-debug port, no relaunch, **no second AI model, no API
+key.** The agent you already trust is the only brain in the loop.
 
-It's the open, self-owned answer to "I wish my agent could just use my real browser": the same
-capability as the first-party Claude-in-Chrome extension, but **yours, auditable, MCP-native, and
-faster per action** (see the [benchmark](#benchmark) below).
-
-```
-Claude Code ──stdio (MCP)──▶ mcp/server.mjs ─┐
-Cursor      ──stdio (MCP)──▶ mcp/server.mjs ─┼─IPC─▶ broker ──ws://127.0.0.1:10577──▶ Chrome extension ──CDP──▶ your real tabs
-VS Code     ──stdio (MCP)──▶ mcp/server.mjs ─┘                                              │
-                                                                    each session ⇒ its own 🐾 tab group
-```
-
-**Run as many sessions as you want.** The first one starts a shared *broker* that owns the port
-and the extension; every other session just connects to it. Each session gets its **own tab group**
-(named `🐾 PawBrowse`, its own color) and drives only its own tab, so several editors/agents can
-automate the browser at once without fighting over a port or a tab. Close a session and its tabs are
-cleaned up; the broker reaps itself when the last session ends. Nothing to configure — no ports, no
-"already in use."
+The same power as the first-party Claude-in-Chrome extension — but **yours, open source, auditable, and
+[about 2× fewer round-trips](#why-its-fast)** because it reads pages as a table instead of screenshotting them.
 
 ---
 
-## Getting started
+## Try it — about 30 seconds
 
-Two one-time steps, about 30 seconds. PawBrowse is a **Chrome extension** (the hands + eyes in
-your browser) plus a tiny **local server** your AI client runs — both install with a click.
+Two clicks and one line. 👇
 
-### 1 — Add the extension to Chrome
+### 1. Add the extension to Chrome
 
 [![Add to Chrome](https://img.shields.io/badge/Add%20to-Chrome-4285F4?logo=googlechrome&logoColor=white&style=for-the-badge)](https://chromewebstore.google.com/detail/ppfdoledneneiaflggcfogecfnhkmloe)
 
-> Live on the **[Chrome Web Store](https://chromewebstore.google.com/detail/ppfdoledneneiaflggcfogecfnhkmloe)** — one click, done.
+One click on the **[Chrome Web Store](https://chromewebstore.google.com/detail/ppfdoledneneiaflggcfogecfnhkmloe)** — that's the "hands and eyes" in your browser.
 
-### 2 — Connect your AI client (one time)
+### 2. Connect your agent
 
 <p>
 <a href="cursor://anysphere.cursor-deeplink/mcp/install?name=pawbrowse&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsInBhd2Jyb3dzZUBsYXRlc3QiXX0="><img src="https://img.shields.io/badge/Add%20to-Cursor-000000?logo=cursor&logoColor=white&style=for-the-badge" alt="Add to Cursor"></a>
@@ -73,110 +55,36 @@ your browser) plus a tiny **local server** your AI client runs — both install 
 <a href="https://github.com/ItaiZeilig/pawbrowse/raw/main/dist/pawbrowse.mcpb"><img src="https://img.shields.io/badge/Add%20to-Claude%20Desktop-D97757?logo=anthropic&logoColor=white&style=for-the-badge" alt="Add to Claude Desktop"></a>
 </p>
 
-**Claude Desktop** — click the button above to download `pawbrowse.mcpb`, then **double-click it**
-(or drag it into **Settings → Extensions**) and click **Install**. No command, no config.
+- **Claude Desktop** — click the badge, then **double-click** the downloaded `pawbrowse.mcpb` (or drag it into **Settings → Extensions**) and hit **Install**. No command, no config.
+- **Cursor / VS Code** — click the badge and approve.
+- **Claude Code** — paste one line:
 
-**Claude Code** — one line (the CLI has no click-to-install, so paste this):
+  ```bash
+  claude mcp add --scope user pawbrowse -- npx -y pawbrowse@latest
+  ```
 
-```bash
-claude mcp add --scope user pawbrowse -- npx -y pawbrowse@latest
-```
+### 3. Restart your client and just ask
 
-Then **fully restart your client** and ask: *"use pawbrowse: what's my browser status?"* — you
-should see `extension_connected: true`, and the extension badge turns **green ●**.
+> *"use pawbrowse: what's my browser status?"*
 
-> Needs **Node.js ≥ 18**. Works with Claude Code, Cursor, VS Code, or any MCP client — the one
-> button/line just tells your client to run `npx -y pawbrowse@latest`; nothing to clone or build.
->
-> Building from source or contributing? See **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+You should see `extension_connected: true`, and the extension badge turns **green ●**. 🎉 You're driving.
 
-## Using it
+<sub>Needs **Node.js ≥ 18**. Nothing to clone or build — the button/line just runs `npx -y pawbrowse@latest`. Prefer to build from source or contribute? See **[CONTRIBUTING.md](CONTRIBUTING.md)**.</sub>
 
-You don't call the tools yourself — you just **ask Claude Code in plain language**, and it uses
-PawBrowse to drive whatever tab you point it at. Some things to try:
+## What can I ask it?
+
+You never call the tools yourself — you talk to your agent in plain English, and it drives whatever tab you point it at:
 
 - *"Open news.ycombinator.com and give me the top 5 story titles."*
 - *"On this tab, search for 'open source license' and open the first result."*
-- *"Fill the signup form on the current page with my name and email, but don't submit."*
+- *"Fill the signup form with my name and email — but don't submit."*
 - *"Go to my GitHub notifications and tell me what's new."*
 
-Tips:
-- It acts on the **tab you have open and are logged into** — no separate window, no re-login.
-- Point it at a specific tab by name, or it uses the active tab.
-- It reads the page as a list of controls and clicks/types precisely — no screenshots needed.
+It works on the tab **you already have open and are logged into** — no separate window, no re-login. Name a tab and it uses that one; otherwise it uses the active tab.
 
-## Troubleshooting
+## How it works — it reads pages as a table, not screenshots
 
-| Symptom | Fix |
-| --- | --- |
-| Badge never turns green | The server isn't running — make sure you **fully restarted** Claude Code after `claude mcp add` (a `/mcp` reconnect alone won't relaunch it). |
-| "No extension connected" | Reload the extension at `chrome://extensions`, then re-run `browser_status`. |
-| "Another debugger is already attached" | That tab has DevTools open or another extension driving it — close DevTools or switch tabs. |
-| A `chrome://` / Web Store page won't drive | Those are browser pages Chrome blocks from automation — use a normal web page. |
-| Changed the port | Set the same port in the extension's **Options** and in `--env PAWBROWSE_PORT=…`. |
-
-> Requires **Node ≥ 18** (≥ 22 to run the test suite). Works on Chrome, Edge, and Brave.
-
----
-
-## Highlights
-
-- **Your real browser.** Uses Chrome's built-in `chrome.debugger` (CDP) on tabs you already have
-  open and logged into — no `--remote-debugging-port`, no relaunch, no separate profile.
-- **The agent is the policy.** No second model, no `TYPESAFE_API_KEY`, no OpenRouter — *you*
-  (Claude) decide every action. Page content flows to your agent as normal tool results and
-  **never leaves for any third-party server.**
-- **Reads pages as an element table, not screenshots.** A compact, numbered list of the actionable
-  controls in view — cheap in tokens, fast to reason over, precise to act on.
-- **Fast.** Stable element refs let it act in one round trip, not two — **~2× fewer agent round-trips**
-  than perceive-then-act drivers (see the [benchmark](#benchmark)).
-- **Zero dependencies, MIT, extensible.** The whole server is one auditable `.mjs` file; the
-  extension is plain JS. Add a tool or an op in minutes.
-
-## Benchmark
-
-<p align="center">
-  <a href="assets/benchmark.mp4"><img src="assets/benchmark.gif" alt="Side-by-side benchmark on live Booking.com: the same agent books a 4-star Lisbon hotel through PawBrowse in 5 agent round-trips and through Claude in Chrome in 10, so PawBrowse finishes the task while Claude in Chrome is halfway" width="100%"></a>
-</p>
-
-<p align="center"><sub>
-Same task on live Booking.com (book a 4-star Lisbon hotel — 5 actions), same agent (Claude), same real Chrome, both filmed live.
-The clock counts <strong>agent round-trips</strong>: one tool call = one round-trip, priced at the same per-call latency for both. <a href="assets/benchmark.mp4">MP4</a>
-</sub></p>
-
-| | PawBrowse | Claude in Chrome |
-| --- | --- | --- |
-| Round-trips for the 5 actions | **5** — 1 per action | 10 — 2 per action (read, then act) |
-| Screenshots / reads to see the page | **0** — every act returns the fresh element table | 5 — one before each action |
-| Relative agent time | **1×** | ~2× |
-
-> **Why:** the agent loop is round-trip-bound — each tool call is a full model inference. PawBrowse's
-> `act` returns the next screen already perceived, so an action is **one** round-trip; Claude in Chrome
-> must perceive-then-act, so every action is **two**. Same task, same model, so the per-call latency is
-> the same on both sides and the **round-trip count is the gap**: 5 vs 10 → ~2×.
->
-> **Honest caveats:** the clock is round-trips × a fixed per-call latency (equal for both), not a
-> stopwatch — it isolates the structural difference and drops network/page-load noise. One run each;
-> an illustration, not a statistic. Reproduce: `scripts/demo/peek-record.mjs` films each tab,
-> `scripts/demo/render_race.py` renders the comparison.
-
-## How it compares
-
-| | Claude-in-Chrome | **PawBrowse** |
-| --- | --- | --- |
-| Drives your real, logged-in Chrome | ✅ | ✅ (`chrome.debugger`, no port) |
-| Decision model | Claude | **Claude — no second model, no key** |
-| Perception | screenshots + a11y tree | **compact element table** |
-| Round trips per action | 2 (perceive → act) | **1** (stable refs) |
-| Page data to a third party | no | **no** |
-| Per-site permission gate | yes (allowlist) | no |
-| Open source / self-owned | ❌ | **✅ MIT, zero-dep** |
-| Works with any MCP client | ❌ | **✅** |
-
-## The element table
-
-Every observation returns a compact, numbered table of the **in-viewport, actionable** controls —
-with proper accessible names, current values, and state flags — instead of a screenshot:
+Every time it looks, PawBrowse hands your agent a compact, numbered list of the **clickable things in view** — with real accessible names, current values, and state flags — instead of a screenshot:
 
 ```
 Web browser - Wikipedia  —  https://en.wikipedia.org/wiki/Web_browser
@@ -189,13 +97,67 @@ e9   click✓  "Remember me"
 e3   select  "Country"  opts{US | UK | ...}
 ```
 
-Flags after the kind: `✓`/`·` checked/unchecked · `▾`/`▸` expanded/collapsed (open vs closed menu,
-combobox, accordion) · `◉` selected (active tab/option). Refs like `e10` derive from a **stable node
-identity**, so the agent can act on a control by ref in **one round trip**.
+<sub>Flags after the kind: `✓`/`·` checked/unchecked · `▾`/`▸` expanded/collapsed · `◉` selected.</sub>
 
-## Tools
+Each ref (`e10`) is a **stable handle** to a real element, and every action **returns the fresh table**. So your agent acts in **one round-trip** — no "screenshot, think, screenshot again." That's the whole speed story ([benchmark below](#why-its-fast)), and it's cheaper in tokens too.
 
-| Tool | Purpose |
+Under the hood it's boringly simple: a Chrome MV3 extension drives your tabs through Chrome's built-in
+`chrome.debugger` (CDP — no debug port, no relaunch), and a one-file MCP server bridges it to your agent
+over localhost. Open as many editors/agents as you like — the first one starts a shared *broker*, and each
+session gets its **own 🐾 tab group** so nothing fights over the port or a tab.
+
+```
+Claude Code ──stdio (MCP)──▶ mcp/server.mjs ─┐
+Cursor      ──stdio (MCP)──▶ mcp/server.mjs ─┼─IPC─▶ broker ──ws://127.0.0.1:10577──▶ Chrome extension ──CDP──▶ your real tabs
+VS Code     ──stdio (MCP)──▶ mcp/server.mjs ─┘                                              │
+                                                                    each session ⇒ its own 🐾 tab group
+```
+
+## Why it's fast
+
+<p align="center">
+  <a href="assets/benchmark.mp4"><img src="assets/benchmark.gif" alt="Side-by-side benchmark on live Booking.com: the same agent books a 4-star Lisbon hotel through PawBrowse in 5 agent round-trips and through Claude in Chrome in 10, so PawBrowse finishes while Claude in Chrome is halfway" width="100%"></a>
+</p>
+
+<p align="center"><sub>
+Same task on live Booking.com (book a 4-star Lisbon hotel — 5 actions), same agent (Claude), same real Chrome, both filmed live.
+The clock counts <strong>agent round-trips</strong>: one tool call = one round-trip, at the same per-call latency for both. <a href="assets/benchmark.mp4">MP4</a>
+</sub></p>
+
+| | PawBrowse | Claude in Chrome |
+| --- | --- | --- |
+| Round-trips for the 5 actions | **5** — 1 per action | 10 — 2 per action (read, then act) |
+| Screenshots / reads to see the page | **0** — every act returns the fresh table | 5 — one before each action |
+| Relative agent time | **1×** | ~2× |
+
+> **Why:** the agent loop is round-trip-bound — each tool call is a full model inference. PawBrowse's
+> `act` returns the next screen already perceived, so an action is **one** round-trip; a perceive-then-act
+> driver needs **two**. Same task, same model → same per-call latency, so the **round-trip count is the
+> gap**: 5 vs 10 → ~2×.
+>
+> **Honest caveats:** the clock is round-trips × a fixed, equal per-call latency — it isolates the
+> structural difference and drops network noise, it's not a stopwatch. One run each; an illustration, not
+> a statistic. Reproduce: `scripts/demo/peek-record.mjs` films each tab, `scripts/demo/render_race.py`
+> renders it.
+
+## How it compares
+
+| | Claude-in-Chrome | **PawBrowse** |
+| --- | --- | --- |
+| Drives your real, logged-in Chrome | ✅ | ✅ (`chrome.debugger`, no port) |
+| Decision model | Claude | **Claude — no second model, no key** |
+| Perception | screenshots + a11y tree | **compact element table** |
+| Round-trips per action | 2 (perceive → act) | **1** (stable refs) |
+| Page data to a third party | no | **no** |
+| Per-site permission gate | yes (allowlist) | no |
+| Open source / self-owned | ❌ | **✅ MIT, zero-dep** |
+| Works with any MCP client | ❌ | **✅** |
+
+## The tools
+
+You won't call these directly — your agent does — but here's the whole surface:
+
+| Tool | What it does |
 | --- | --- |
 | `browser_status` | Connection + attached-tab diagnostics. Call first if anything's off. |
 | `browser_tabs` | List open tabs (`id`, `title`, `url`, `active`). |
@@ -209,85 +171,57 @@ identity**, so the agent can act on a control by ref in **one round trip**.
 widgets/menus not in the table) · `{op:"type",ref:"e7",text:"..."}` · `{op:"select",ref:"e8",value:"..."}`
 · `{op:"key",key:"Enter"}` · `{op:"scroll",dy:600}` · `{op:"wait",ms:500}`.
 
-## Reliability & safety engineering
+## Built to be trustworthy
 
-PawBrowse was hardened through two multi-agent code audits **and** live testing on real sites:
+Two questions everyone has: *does it break?* and *where does my data go?*
 
-- **Hit-tested clicks.** Before every click it re-resolves the element live and verifies the center
-  isn't covered (`elementFromPoint`), so it never clicks a stale, moved, or occluded target.
-- **Semantic freshness guard.** An element's role + accessible name is fingerprinted at observe time
-  and re-checked before acting — a silently relabeled target is rejected ("observe again") instead
-  of mis-clicked.
-- **Robust fill.** Select-all + `insertText`, which works with React/controlled inputs; typed
-  comboboxes wait for their autocomplete options to actually render.
-- **Background-tab safe.** Uses `Emulation.setFocusEmulationEnabled` and `setTimeout`-based waits
-  (never `requestAnimationFrame`, which Chrome pauses in background tabs) so driving a tab you aren't
-  looking at doesn't hang.
-- **No double-execution.** If a post-action read fails because the page is navigating, the ops are
-  reported as executed ("call observe next") rather than surfaced as a failure to retry.
-- **Serialized, unwedgeable command queue** — overlapping calls can't race the debugger, and one
-  hung command can't block the rest.
+**It's hardened.** Two multi-agent code audits plus live testing on real sites went into these:
 
-## Security & privacy
+- **Hit-tested clicks** — it re-resolves each element live and checks the center isn't covered before clicking, so it never hits a stale, moved, or occluded target.
+- **Semantic freshness guard** — an element's role + name is fingerprinted, and a silently relabeled target is rejected ("observe again") instead of mis-clicked.
+- **Robust typing** — select-all + `insertText` (works with React/controlled inputs); typed comboboxes wait for autocomplete to render.
+- **Background-tab safe** — uses `setTimeout`-based waits (not `requestAnimationFrame`, which Chrome pauses in background tabs), so driving a tab you aren't looking at doesn't hang.
+- **No double-execution & an unwedgeable queue** — overlapping calls can't race the debugger, and one hung command can't block the rest.
 
-- **No data leaves your machine.** There's no model and no API key; page content goes only to the
-  agent you run locally. `password`, `file`, and `hidden` inputs are excluded and never exposed.
-  (Other visible fields — e.g. text inputs — *are* part of the element table, so treat what's on
-  screen as visible to your agent.)
-- **Local-only bridge.** The WebSocket binds to `127.0.0.1`, rejects non-`chrome-extension://`
-  origins (so a web page can't connect), trusts only the current extension socket, caps inbound
-  frame size, and rejects malformed/oversized frames. **Trust model:** the bridge trusts any
-  *local* process on `127.0.0.1` (there's no shared token yet), so it assumes other software on
-  your machine is trusted — the same assumption as most localhost dev tools. A per-pair token is
-  planned hardening.
-- **One powerful permission, no host permissions.** The extension declares `debugger` (plus `tabs`,
-  `storage`, `alarms`) and **no** host permissions — `chrome.debugger` doesn't need them. That's the
-  same capability class as any real-browser agent; use it deliberately.
-- **Fully auditable.** The server is one zero-dependency file; the extension is plain JS.
+**It stays on your machine.** No model, no API key, no telemetry.
 
-Found a vulnerability? See **[SECURITY.md](SECURITY.md)** — please don't open a public issue.
+- Page content it reads goes **only** to the local agent you run — never to any third-party server. `password`, `file`, and `hidden` inputs are excluded and never exposed (other visible fields *are* in the table, so treat what's on screen as visible to your agent).
+- The bridge binds to `127.0.0.1`, rejects non-`chrome-extension://` origins, and trusts only the current extension socket. It assumes other software on your machine is trusted — the same as most localhost dev tools; a per-pair token is planned hardening.
+- The extension declares `debugger` (plus `tabs`, `storage`, `alarms`) and **no host permissions**. The only thing stored is your bridge port number.
+- Fully auditable: the server is one zero-dependency file, the extension is plain JS.
 
-## Privacy policy
+Full details: **[SECURITY.md](SECURITY.md)** · **[PRIVACY.md](PRIVACY.md)**. Found a vulnerability? Please don't open a public issue — see SECURITY.md.
 
-PawBrowse is built to collect nothing. Full policy: **[PRIVACY.md](PRIVACY.md)**. In short:
+## Honest limits
 
-- **Collection / use:** PawBrowse has no AI model, no account, no API key, and **no telemetry or
-  analytics**. Page content it reads (element tables, page text) is returned only to the local AI
-  client you run, to fulfill your request.
-- **Storage:** the only thing stored is your **bridge port number**, in `chrome.storage.local` on
-  your machine. Page content is not persisted by the extension beyond the current operation.
-- **Sharing:** nothing is sent to the developer or any third-party server. All traffic stays on
-  `127.0.0.1` (localhost) between the extension and the server on your own computer.
-- **Retention:** none — there is no server-side data, so there is nothing to retain or delete.
-- **Contact:** questions or requests via [GitHub issues](https://github.com/ItaiZeilig/pawbrowse/issues).
+- Attaching shows Chrome's *"PawBrowse is debugging this browser"* banner — expected.
+- One debugger client per tab: a tab with DevTools open (or driven by another extension) can't be attached — switch tabs or close DevTools.
+- `chrome://`, the Chrome Web Store, and other browser pages can't be driven (Chrome blocks automation there).
+- **One active client at a time** — the bridge is a single localhost port, so drive from one client at a time (Claude Code *or* Claude Desktop). A second client says the port's in use rather than failing hard; set a different `PAWBROWSE_PORT` if you need both.
+- **Enumerates shadow DOM + same-origin iframes.** Controls inside open shadow roots and same-origin iframes are in the table and clickable. **Not yet:** cross-origin iframes (the browser blocks them), canvas, and file uploads.
 
-## Notes & limits
+## Troubleshooting
 
-- Attaching shows Chrome's "PawBrowse is debugging this browser" banner — expected.
-- One debugger client per tab: a tab with DevTools open (or driven by another extension) can't be
-  attached — switch tabs or close DevTools.
-- `chrome://`, the Chrome Web Store, and other browser pages can't be driven.
-- **One active client at a time.** The bridge is a single localhost port, so PawBrowse can be driven
-  by one client at a time (e.g. Claude Code *or* Claude Desktop). A second client reports the port
-  is in use via `browser_status` rather than failing hard; set a different `PAWBROWSE_PORT` per
-  client if you need both.
-- **Shadow DOM and same-origin iframes are enumerated** (v0.4.0): controls inside open shadow roots
-  (web components) and same-origin iframes appear in the element table and are clickable/typable by
-  ref. **Not yet:** cross-origin iframes (the browser blocks JS access to them), canvas, and file
-  uploads.
+| Symptom | Fix |
+| --- | --- |
+| Badge never turns green | The server isn't running — make sure you **fully restarted** your client after `claude mcp add` (a `/mcp` reconnect alone won't relaunch it). |
+| "No extension connected" | Reload the extension at `chrome://extensions`, then re-run `browser_status`. |
+| "Another debugger is already attached" | That tab has DevTools open or another extension driving it — close DevTools or switch tabs. |
+| A `chrome://` / Web Store page won't drive | Those are browser pages Chrome blocks from automation — use a normal web page. |
+| Changed the port | Set the same port in the extension's **Options** and in `--env PAWBROWSE_PORT=…`. |
+
+<sub>Requires **Node ≥ 18** (≥ 22 to run the test suite). Works on Chrome, Edge, and Brave.</sub>
 
 ## Contributing
 
-Contributions welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)** for dev setup, tests (`npm test`),
-and the PR process. By participating you agree to the **[Code of Conduct](CODE_OF_CONDUCT.md)**.
-Questions? **[SUPPORT.md](SUPPORT.md)**.
+PRs welcome! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for dev setup and tests (`npm test`), and the
+**[Code of Conduct](CODE_OF_CONDUCT.md)**. Questions? **[SUPPORT.md](SUPPORT.md)**.
 
 ## Credits
 
-Built with [Claude Code](https://claude.com/claude-code). Some of the page-perception and
-action-execution techniques are adapted from
-[browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast) (MIT); this credit is kept
-as required by that project's license.
+Built with [Claude Code](https://claude.com/claude-code). Some page-perception and action-execution
+techniques are adapted from [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast)
+(MIT); this credit is kept as required by that project's license.
 
 ## License
 
